@@ -41,6 +41,14 @@ string Trim(string s) {
     return s;
 }
 
+string LineNumToString(int linum)
+{
+    if (linum < 10) return "000" + to_string(linum);
+    else if (linum >= 10 && linum < 100) return "00" + to_string(linum);
+    else if (linum >= 100 && linum < 1000) return "0" + to_string(linum);
+    else return to_string(linum);
+}
+
 void processSingleFile(string path)
 {
     logfile << "Processing file " << path << "..." << endl;
@@ -51,6 +59,7 @@ void processSingleFile(string path)
     myoutputfile.open(output_path + "\\" + GetFilenameFromPath(path));
     if (myfile.is_open())
     {
+        int linum = 1;
         while (getline(myfile, line))
         {
             bool nochange = true;
@@ -58,7 +67,7 @@ void processSingleFile(string path)
             auto commandStartIdx = line.find_first_of('@');
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bgm")
             {
-                logfile << "CHECKING: " << line << endl;
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
                 nochange = false;
 
                 // replace " with '
@@ -87,13 +96,26 @@ void processSingleFile(string path)
                 }
             }
 
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bgs")
+            {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+
+                // replace " with '
+                for (size_t i = 0; i < line2.length(); ++i) {
+                    if (line2[i] == '\"') {
+                        line2[i] = '\'';
+                    }
+                }
+            }
             if (nochange) {
                 myoutputfile << line << endl;
             }
             else {
                 myoutputfile << line2 << endl;
-                logfile << "REPLACED: " << line2 << endl;
+                logfile << LineNumToString(linum) << " REPLACED: " << line2 << endl;
             }
+            ++linum;
         }
         myfile.close();
     }
