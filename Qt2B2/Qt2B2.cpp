@@ -7,6 +7,11 @@
 #include <string>
 #include <direct.h>
 
+// Commands
+#define BGM
+// #define BGS
+// #define BGMFADE
+
 namespace fs = std::filesystem;
 using namespace std;
 
@@ -65,6 +70,7 @@ void processSingleFile(string path)
             bool nochange = true;
             string line2 = line;
             auto commandStartIdx = line.find_first_of('@');
+#ifdef BGM
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bgm")
             {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
@@ -95,7 +101,9 @@ void processSingleFile(string path)
                     }
                 }
             }
+#endif // @bgm
 
+#ifdef BGS
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bgs")
             {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
@@ -108,6 +116,12 @@ void processSingleFile(string path)
                     }
                 }
             }
+#endif // @bgs
+
+#ifdef FADEBGM
+            // TODO
+#endif // @fadebgm
+
             if (nochange) {
                 myoutputfile << line << endl;
             }
