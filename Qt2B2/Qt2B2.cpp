@@ -8,9 +8,10 @@
 #include <direct.h>
 
 // Commands
-#define BGM
-// #define BGS
-// #define BGMFADE
+//#define BGM
+//#define BGS
+//#define FADEBGM
+#define BG
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -19,7 +20,7 @@ static bool IsDebug = true;
 
 static ofstream logfile;
 
-string path = IsDebug ? "D:\\286studio\\Ballade1Qt-master\\Ballade1\\script\\chs" : ".";
+string path = IsDebug ? "C:\\Users\\wwu39\\Desktop\\286studio\\Ballade1Qt-master\\Ballade1\\script\\chs" : ".";
 string output_path = path + "\\OUTPUT";
 
 string GetFilenameFromPath(string path)
@@ -121,6 +122,38 @@ void processSingleFile(string path)
 #ifdef FADEBGM
             // TODO
 #endif // @fadebgm
+
+#ifdef BG
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bg(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+
+                // replace " with '
+                for (size_t i = 0; i < line2.length(); ++i) {
+                    if (line2[i] == '\"') {
+                        line2[i] = '\'';
+                    }
+                }
+
+                // if 2nd param of @bgm > 1, divide by 1000
+                int firstCommaIdx = line2.find_first_of(',');
+                int firstRightPrenIdx = line2.find_first_of(')');
+                if (firstCommaIdx != string::npos && firstRightPrenIdx != string::npos)
+                {
+                    string secondPara = line2.substr(firstCommaIdx + 1, firstRightPrenIdx - firstCommaIdx - 1);
+                    int spi = stoi(secondPara);
+                    string st = line2.substr(0, firstCommaIdx + 1);
+                    if (spi > 1)
+                    {
+                        line2 = st + to_string(spi / 1000.0) + ")";
+                    }
+                    else
+                    {
+                        line2 = st + Trim(secondPara) + ")";
+                    }
+                }
+            }
+#endif
 
             if (nochange) {
                 myoutputfile << line << endl;
