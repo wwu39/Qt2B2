@@ -34,6 +34,36 @@ string GetFilenameFromPath(string path)
     return path;
 }
 
+vector<string> GetParams(string line)
+{
+    int lpi = -1, rpi = -1;
+    vector<int> cis;
+    for (size_t i = 0; i < line.length(); ++i) {
+        if (line[i] == '(') lpi = i;
+        else if (line[i] == ')') rpi = i;
+        else if (line[i] == ',') cis.push_back(i);
+    }
+    if (cis.size() == 0)
+        return { line.substr(lpi + 1, rpi - lpi - 1) };
+    else {
+        vector<string> ret;
+        for (size_t i = 0; i <= cis.size(); ++i) {
+            size_t si = i == 0 ? lpi : cis[i - 1];
+            size_t ei = i == cis.size() ? rpi : cis[i];
+            ret.push_back(line.substr(si + 1, ei - si - 1));
+        }
+        return ret;
+    }
+}
+
+string SetParams(string line, vector<string> params)
+{
+    string ret = line.substr(0, line.find_first_of('(') + 1);
+    auto size = params.size();
+    for (size_t i = 0; i < size; ++i) ret += params[i] + (i == size - 1 ? ')' : ',');
+    return ret;
+}
+
 bool IsB2ScriptFile(string path)
 {
     auto dotPos = path.find_last_of('.');
@@ -69,6 +99,7 @@ void processSingleFile(string path)
         int linum = 1;
         while (getline(myfile, line))
         {
+            if (line[0] == ';') continue; // skip comments
             bool nochange = true;
             string line2 = line;
             auto commandStartIdx = line.find_first_of('@');
