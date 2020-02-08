@@ -11,7 +11,8 @@
 //#define BGM
 //#define BGS
 //#define FADEBGM
-#define BG
+//#define BG
+#define SE
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -150,6 +151,39 @@ void processSingleFile(string path)
                     else
                     {
                         line2 = st + Trim(secondPara) + ")";
+                    }
+                }
+            }
+#endif
+#ifdef SE
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@se(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                for (size_t i = 0; i < line2.length(); ++i) {
+                    if (line2[i] == '\"') {
+                        line2[i] = '\'';
+                    }
+                }
+                int firstCommaIdx = line2.find_first_of(',');
+                int firstLeftPrenIdx = line2.find_first_of('(');
+                if (firstCommaIdx != string::npos && firstLeftPrenIdx != string::npos) {
+                    string firstPara = line2.substr(firstLeftPrenIdx + 1, firstCommaIdx - firstLeftPrenIdx - 1);
+                    if (firstPara == "\'\'" || firstPara == "\"\"") {
+                        int firstRightPrenIdx = line2.find_first_of(')');
+                        if (firstCommaIdx != string::npos && firstRightPrenIdx != string::npos)
+                        {
+                            string secondPara = line2.substr(firstCommaIdx + 1, firstRightPrenIdx - firstCommaIdx - 1);
+                            int spi = stoi(secondPara);
+                            string st = line2.substr(0, firstCommaIdx + 1);
+                            if (spi > 1)
+                            {
+                                line2 = st + to_string(spi / 1000.0) + ")";
+                            }
+                            else
+                            {
+                                line2 = st + Trim(secondPara) + ")";
+                            }
+                        }
                     }
                 }
             }
