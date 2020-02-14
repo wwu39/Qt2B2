@@ -8,11 +8,18 @@
 #include <direct.h>
 
 // Commands
-//#define BGM
-//#define BGS
-//#define FADEBGM
-//#define BG
+#define BGM
+#define BGS
+#define FADEBGM
+#define FADESE
+#define BG
 #define SE
+#define UNLOCKMUSIC
+#define UNLOCKCG
+#define BRANCH
+#define IMAGE
+#define GAME
+#define AUTOSAVE
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -36,7 +43,7 @@ string GetFilenameFromPath(string path)
 
 vector<string> GetParams(string line)
 {
-    int lpi = -1, rpi = -1;
+    size_t lpi = -1, rpi = -1;
     vector<int> cis;
     for (size_t i = 0; i < line.length(); ++i) {
         if (line[i] == '(') lpi = i;
@@ -62,6 +69,14 @@ string SetParams(string line, vector<string> params)
     auto size = params.size();
     for (size_t i = 0; i < size; ++i) ret += params[i] + (i == size - 1 ? ')' : ',');
     return ret;
+}
+
+void SingleQuote(string& line) {
+    for (size_t i = 0; i < line.length(); ++i) {
+        if (line[i] == '\"') {
+            line[i] = '\'';
+        }
+    }
 }
 
 bool IsB2ScriptFile(string path)
@@ -99,10 +114,13 @@ void processSingleFile(string path)
         int linum = 1;
         while (getline(myfile, line))
         {
-            if (line[0] == ';') continue; // skip comments
             bool nochange = true;
             string line2 = line;
             auto commandStartIdx = line.find_first_of('@');
+            auto commandStartIdx2 = line.find_first_of('+');
+            auto semicolonIdx = line.find_first_of(';');
+            if (commandStartIdx != string::npos && semicolonIdx < commandStartIdx) continue;
+            if (commandStartIdx2 != string::npos && semicolonIdx < commandStartIdx2) continue;
 #ifdef BGM
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bgm")
             {
@@ -152,8 +170,39 @@ void processSingleFile(string path)
 #endif // @bgs
 
 #ifdef FADEBGM
-            // TODO
+            // 如果参数2>1，参数2/1000
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 9) == "@fadebgm(")
+            {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                auto params = GetParams(line);
+                if (params.size() > 1) {
+                    int spi = stoi(params[1]);
+                    if (spi > 1) {
+                        params[1] = to_string(spi / 1000.0);
+                        line2 = SetParams(line, params);
+                    }
+                }
+            }
+
 #endif // @fadebgm
+
+#ifdef FADESE
+            // 如果参数2>1，参数2/1000
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 8) == "@fadese(")
+            {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                auto params = GetParams(line);
+                if (params.size() > 1) {
+                    int spi = stoi(params[1]);
+                    if (spi > 1) {
+                        params[1] = to_string(spi / 1000.0);
+                        line2 = SetParams(line, params);
+                    }
+                }
+            }
+#endif
 
 #ifdef BG
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@bg(") {
@@ -186,6 +235,7 @@ void processSingleFile(string path)
                 }
             }
 #endif
+
 #ifdef SE
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 4) == "@se(") {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
@@ -217,6 +267,93 @@ void processSingleFile(string path)
                         }
                     }
                 }
+            }
+#endif
+
+#ifdef UNLOCKMUSIC
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 13) == "@unlockMusic(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = SetParams(line, { GetParams(line)[0] });
+                SingleQuote(line2);
+            }
+#endif // UNLOCKMUSIC
+
+#ifdef UNLOCKCG
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 10) == "@unlockCg(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = SetParams(line, { GetParams(line)[0] });
+                SingleQuote(line2);
+            }
+#endif
+
+#ifdef BRANCH
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 8) == "@branch(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = line + "\n@r=waitBranch()";
+            }
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 13) == "@clearBranch(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = ";" + line;
+            }
+#endif
+
+#ifdef IMAGE
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 13) == "+image.group(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = SetParams("@image()", { GetParams(line)[0], "\'\'" });
+            }
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 13) == "+image.image(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                auto params = GetParams(line);
+                line2 = SetParams("@image()", params);
+                string nl = SetParams("\n@setScale()", { params[0], line.substr(line.find_last_of('=') + 1) });
+                line2 += nl;
+            }
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 11) == "+image.add(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                string temp = line.substr(commandStartIdx2 + 22);
+                string z1 = temp.substr(0, temp.find_first_of(')'));
+                temp = temp.substr(temp.find_first_of('('));
+                string z2 = temp.substr(1, temp.find_first_of(')') - 1);
+                line2 = SetParams("@setChild()", { z1,z2 });
+            }
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 14) == "+image.setPos(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = SetParams("@setPosition()", GetParams(line));
+            }
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 18) == "+image.setOpacity(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = SetParams("@setAlpha()", GetParams(line));
+            }
+#endif
+
+#ifdef GAME
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 15) == "+game.showPort=") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = "+game._showPort" + line.substr(line.find_last_of('='));
+            }
+            if (commandStartIdx2 != string::npos && line.substr(commandStartIdx2, 27) == "+game.r=Notification.result") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = ";" + line;
+            }
+#endif
+
+#ifdef AUTOSAVE
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 10) == "@autoSave(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = ";" + line;
             }
 #endif
 
