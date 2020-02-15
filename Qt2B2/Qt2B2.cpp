@@ -8,18 +8,19 @@
 #include <direct.h>
 
 // Commands
-#define BGM
-#define BGS
-#define FADEBGM
-#define FADESE
-#define BG
-#define SE
-#define UNLOCKMUSIC
-#define UNLOCKCG
-#define BRANCH
-#define IMAGE
-#define GAME
-#define AUTOSAVE
+//#define BGM
+//#define BGS
+//#define FADEBGM
+//#define FADESE
+//#define BG
+//#define SE
+//#define UNLOCKMUSIC
+//#define UNLOCKCG
+//#define BRANCH
+//#define IMAGE
+//#define GAME
+//#define AUTOSAVE
+#define WAIT
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -277,7 +278,7 @@ void processSingleFile(string path)
                 line2 = SetParams(line, { GetParams(line)[0] });
                 SingleQuote(line2);
             }
-#endif // UNLOCKMUSIC
+#endif
 
 #ifdef UNLOCKCG
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 10) == "@unlockCg(") {
@@ -292,7 +293,6 @@ void processSingleFile(string path)
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 8) == "@branch(") {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
                 nochange = false;
-                line2 = line + "\n@r=waitBranch()";
             }
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 13) == "@clearBranch(") {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
@@ -354,6 +354,19 @@ void processSingleFile(string path)
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
                 nochange = false;
                 line2 = ";" + line;
+            }
+#endif
+
+#ifdef WAIT
+            if (line.length() > 1 && line[0]=='=') {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                string p = line.substr(1);
+                int spi = stoi(p);
+                if (spi > 1) {
+                    p = to_string(spi / 1000.0);
+                    line2 = "@waitTime(" + p + ")";
+                }
             }
 #endif
 
