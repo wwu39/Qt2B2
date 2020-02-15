@@ -20,7 +20,8 @@
 //#define IMAGE
 //#define GAME
 //#define AUTOSAVE
-#define WAIT
+//#define WAIT
+#define CAMERA
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -29,7 +30,7 @@ static bool IsDebug = true;
 
 static ofstream logfile;
 
-string path = IsDebug ? "C:\\Users\\wwu39\\Desktop\\286studio\\Ballade1Qt-master\\Ballade1\\script\\chs" : ".";
+string path = IsDebug ? "C:\\Users\\24233\\Desktop\\286studio\\Ballade1Qt-master\\Ballade1\\script\\chs" : ".";
 string output_path = path + "\\OUTPUT";
 
 string GetFilenameFromPath(string path)
@@ -290,14 +291,15 @@ void processSingleFile(string path)
 #endif
 
 #ifdef BRANCH
-            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 8) == "@branch(") {
-                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
-                nochange = false;
-            }
             if (commandStartIdx != string::npos && line.substr(commandStartIdx, 13) == "@clearBranch(") {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
                 nochange = false;
                 line2 = ";" + line;
+            }
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 14) == "@showBranches(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
+                nochange = false;
+                line2 = line + "\n@r=waitBranch()";
             }
 #endif
 
@@ -358,15 +360,22 @@ void processSingleFile(string path)
 #endif
 
 #ifdef WAIT
-            if (line.length() > 1 && line[0]=='=') {
+            int firstNotSpace = line.find_first_not_of(' ');
+            if (firstNotSpace < line.length() && line[firstNotSpace] == '=') {
                 logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
                 nochange = false;
-                string p = line.substr(1);
+                string p = line.substr(firstNotSpace + 1);
                 int spi = stoi(p);
                 if (spi > 1) {
                     p = to_string(spi / 1000.0);
-                    line2 = "@waitTime(" + p + ")";
+                    line2 = (firstNotSpace == 0 ? "" : line.substr(0, firstNotSpace)) + "@waitTime(" + p + ")";
                 }
+            }
+#endif
+
+#ifdef CAMERA
+            if (commandStartIdx != string::npos && line.substr(commandStartIdx, 8) == "@camera(") {
+                logfile << LineNumToString(linum) << " CHECKING: " << line << endl;
             }
 #endif
 
@@ -386,6 +395,7 @@ void processSingleFile(string path)
 
 int main()
 {
+    cout << *desktop_directory() << endl;
     if (_mkdir(output_path.c_str()))
         cout << "Create folder " + output_path << endl;
     else
